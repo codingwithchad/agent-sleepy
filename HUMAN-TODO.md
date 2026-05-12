@@ -11,8 +11,8 @@ Structured like ROADMAP.md: do these in order, check them off as you go.
 
 - [ ] **Create your `.env` file one level above the repo** (so it can never be accidentally committed, even with `git add .`):
   ```bash
-  cp .env.example ../  .env
-  # then edit ../env
+  cp .env.example ../.env
+  # then edit ../.env
   ```
   The file should live at `~/code/.env` (one directory above this repo). The code uses `find_dotenv()` which walks up parent directories to find it automatically.
 
