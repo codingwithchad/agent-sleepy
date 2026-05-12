@@ -6,12 +6,14 @@ import logging
 import os
 from datetime import date, datetime, timedelta, timezone
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from garminconnect import Garmin
 
 from sleepy.models.sleep import GarminSleepNight
 
-load_dotenv()
+# Walk up from the repo root until a .env is found — works whether it lives
+# inside the repo or one level above it (the preferred location).
+load_dotenv(find_dotenv(raise_error_if_not_found=False, usecwd=True))
 logger = logging.getLogger(__name__)
 
 # Keys from dailySleepDTO that we actively use. Anything else gets logged
