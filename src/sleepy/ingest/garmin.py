@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Callable
 from datetime import date, datetime, timedelta, timezone
 
 from dotenv import find_dotenv, load_dotenv
 from garminconnect import Garmin
 
-from sleepy.models.sleep import GarminSleepNight
+from sleepy.models.sleep import GarminSleepNight, SleepNight
 
 # Walk up from the repo root until a .env is found — works whether it lives
 # inside the repo or one level above it (the preferred location).
@@ -99,12 +100,19 @@ def _parse_night(raw: dict) -> GarminSleepNight | None:
     )
 
 
-def fetch_sleep_nights(days: int = 7) -> list[GarminSleepNight]:
+def fetch_sleep_nights(
+    days: int = 7,
+    prompt_mfa: Callable[[], str] | None = None,
+) -> list[GarminSleepNight]:
     """Pull the last `days` nights of sleep from Garmin Connect.
 
     Reads GARMIN_EMAIL and GARMIN_PASSWORD from env (via .env).
     To cache session tokens and avoid re-auth on every run, set
     GARMINTOKENS to a writable file path (e.g. ~/.garmin_tokens).
+
+    If your account has 2FA enabled, pass a callable for `prompt_mfa` that
+    returns the one-time code as a string. Defaults to an interactive
+    `input()` prompt — fine for manual runs, not for cron.
 
     Nights where no data exists (device not worn, API gap) are silently
     skipped. Fetch errors per-night are logged as warnings.
@@ -112,7 +120,10 @@ def fetch_sleep_nights(days: int = 7) -> list[GarminSleepNight]:
     email = os.environ["GARMIN_EMAIL"]
     password = os.environ["GARMIN_PASSWORD"]
 
-    garmin = Garmin(email=email, password=password)
+    if prompt_mfa is None:
+        prompt_mfa = lambda: input("Garmin 2FA code: ")  # noqa: E731
+
+    garmin = Garmin(email=email, password=password, prompt_mfa=prompt_mfa)
     garmin.login()  # uses GARMINTOKENS env var automatically if set
 
     today = date.today()
@@ -132,3 +143,27 @@ def fetch_sleep_nights(days: int = 7) -> list[GarminSleepNight]:
             logger.warning("Failed to fetch %s", date_str, exc_info=True)
 
     return nights
+
+
+def garmin_to_sleep_night(night: GarminSleepNight) -> SleepNight:
+    """Map a Garmin-specific sleep record to the canonical SleepNight model.
+
+    This is the seam between device-specific ingest and the device-agnostic
+    store. Oura, Whoop, etc. would each have their own equivalent function.
+    """
+    return SleepNight(
+        date=night.date,
+        source="garmin",
+        sleep_start_utc=night.sleep_start_utc,
+        sleep_end_utc=night.sleep_end_utc,
+        duration_min=night.duration_min,
+        score=night.score,
+        deep_min=night.deep_min,
+        light_min=night.light_min,
+        rem_min=night.rem_min,
+        awake_min=night.awake_min,
+        avg_hrv=night.avg_hrv,
+        avg_respiration=night.avg_respiration,
+        restless_moments=night.restless_moments,
+        sleep_latency_min=night.sleep_latency_min,
+    )
