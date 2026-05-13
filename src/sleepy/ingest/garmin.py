@@ -50,6 +50,11 @@ _USED_ACTIVITY_KEYS = {
     "calories",
     "aerobicTrainingEffect",
     "anaerobicTrainingEffect",
+    "hrTimeInZone_1",
+    "hrTimeInZone_2",
+    "hrTimeInZone_3",
+    "hrTimeInZone_4",
+    "hrTimeInZone_5",
 }
 
 
@@ -221,6 +226,10 @@ def _parse_activity(raw: dict) -> GarminActivity | None:
     max_hr = raw.get("maxHR")
     calories = raw.get("calories")
 
+    def _zone_min(key: str) -> int | None:
+        val = raw.get(key)
+        return int(val) // 60 if val is not None else None
+
     return GarminActivity(
         activity_id=int(activity_id),
         date=start_utc.date(),
@@ -234,6 +243,11 @@ def _parse_activity(raw: dict) -> GarminActivity | None:
         calories=int(calories) if calories is not None else None,
         aerobic_te=raw.get("aerobicTrainingEffect"),
         anaerobic_te=raw.get("anaerobicTrainingEffect"),
+        hr_zone_1_min=_zone_min("hrTimeInZone_1"),
+        hr_zone_2_min=_zone_min("hrTimeInZone_2"),
+        hr_zone_3_min=_zone_min("hrTimeInZone_3"),
+        hr_zone_4_min=_zone_min("hrTimeInZone_4"),
+        hr_zone_5_min=_zone_min("hrTimeInZone_5"),
     )
 
 
@@ -298,4 +312,9 @@ def garmin_to_workout(activity: GarminActivity) -> Workout:
         calories=activity.calories,
         aerobic_te=activity.aerobic_te,
         anaerobic_te=activity.anaerobic_te,
+        hr_zone_1_min=activity.hr_zone_1_min,
+        hr_zone_2_min=activity.hr_zone_2_min,
+        hr_zone_3_min=activity.hr_zone_3_min,
+        hr_zone_4_min=activity.hr_zone_4_min,
+        hr_zone_5_min=activity.hr_zone_5_min,
     )

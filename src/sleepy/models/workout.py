@@ -31,6 +31,11 @@ class GarminActivity(BaseModel):
     calories: int | None = None
     aerobic_te: float | None = None  # aerobic training effect 1.0–5.0
     anaerobic_te: float | None = None  # anaerobic training effect 1.0–5.0
+    hr_zone_1_min: int | None = None  # very light (< ~60% max HR)
+    hr_zone_2_min: int | None = None  # light (aerobic base)
+    hr_zone_3_min: int | None = None  # moderate (aerobic)
+    hr_zone_4_min: int | None = None  # hard (threshold)
+    hr_zone_5_min: int | None = None  # max (anaerobic)
 
     @field_validator("start_time_utc", "end_time_utc", mode="after")
     @classmethod
@@ -62,6 +67,11 @@ class Workout(BaseModel):
     calories: int | None = None
     aerobic_te: float | None = None
     anaerobic_te: float | None = None
+    hr_zone_1_min: int | None = None
+    hr_zone_2_min: int | None = None
+    hr_zone_3_min: int | None = None
+    hr_zone_4_min: int | None = None
+    hr_zone_5_min: int | None = None
 
     @field_validator("start_time_utc", "end_time_utc", mode="after")
     @classmethod

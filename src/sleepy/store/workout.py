@@ -42,6 +42,11 @@ _CREATE_TABLE = """
         calories        INTEGER,
         aerobic_te      REAL,
         anaerobic_te    REAL,
+        hr_zone_1_min   INTEGER,
+        hr_zone_2_min   INTEGER,
+        hr_zone_3_min   INTEGER,
+        hr_zone_4_min   INTEGER,
+        hr_zone_5_min   INTEGER,
         PRIMARY KEY (activity_id, source)
     )
 """
@@ -70,6 +75,11 @@ def upsert_workouts(workouts: list[Workout], db_path: Path | None = None) -> int
             "calories": w.calories,
             "aerobic_te": w.aerobic_te,
             "anaerobic_te": w.anaerobic_te,
+            "hr_zone_1_min": w.hr_zone_1_min,
+            "hr_zone_2_min": w.hr_zone_2_min,
+            "hr_zone_3_min": w.hr_zone_3_min,
+            "hr_zone_4_min": w.hr_zone_4_min,
+            "hr_zone_5_min": w.hr_zone_5_min,
         }
         for w in workouts
     ]
@@ -79,11 +89,13 @@ def upsert_workouts(workouts: list[Workout], db_path: Path | None = None) -> int
             INSERT OR REPLACE INTO workouts (
                 activity_id, source, date, name, activity_type,
                 start_time_utc, end_time_utc, duration_min,
-                avg_hr, max_hr, calories, aerobic_te, anaerobic_te
+                avg_hr, max_hr, calories, aerobic_te, anaerobic_te,
+                hr_zone_1_min, hr_zone_2_min, hr_zone_3_min, hr_zone_4_min, hr_zone_5_min
             ) VALUES (
                 :activity_id, :source, :date, :name, :activity_type,
                 :start_time_utc, :end_time_utc, :duration_min,
-                :avg_hr, :max_hr, :calories, :aerobic_te, :anaerobic_te
+                :avg_hr, :max_hr, :calories, :aerobic_te, :anaerobic_te,
+                :hr_zone_1_min, :hr_zone_2_min, :hr_zone_3_min, :hr_zone_4_min, :hr_zone_5_min
             )
             """,
             rows,
@@ -131,6 +143,11 @@ def get_workouts(
             calories=row["calories"],
             aerobic_te=row["aerobic_te"],
             anaerobic_te=row["anaerobic_te"],
+            hr_zone_1_min=row["hr_zone_1_min"],
+            hr_zone_2_min=row["hr_zone_2_min"],
+            hr_zone_3_min=row["hr_zone_3_min"],
+            hr_zone_4_min=row["hr_zone_4_min"],
+            hr_zone_5_min=row["hr_zone_5_min"],
         )
         for row in rows
     ]
