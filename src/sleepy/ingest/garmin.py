@@ -1,4 +1,4 @@
-"""Pull sleep data from Garmin Connect."""
+"""Pull sleep and activity data from Garmin Connect."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from dotenv import find_dotenv, load_dotenv
 from garminconnect import Garmin
 
 from sleepy.models.sleep import GarminSleepNight, SleepNight
+from sleepy.models.workout import GarminActivity, Workout
 
 # Walk up from the repo root until a .env is found — works whether it lives
 # inside the repo or one level above it (the preferred location).
@@ -35,6 +36,21 @@ _USED_KEYS = {
 }
 
 _extra_keys_logged = False
+_extra_activity_keys_logged = False
+
+# Keys from activity records that we actively use.
+_USED_ACTIVITY_KEYS = {
+    "activityId",
+    "activityName",
+    "activityType",
+    "startTimeGMT",
+    "duration",
+    "averageHR",
+    "maxHR",
+    "calories",
+    "aerobicTrainingEffect",
+    "anaerobicTrainingEffect",
+}
 
 
 def _log_extra_keys(dto: dict) -> None:
@@ -166,4 +182,120 @@ def garmin_to_sleep_night(night: GarminSleepNight) -> SleepNight:
         avg_respiration=night.avg_respiration,
         restless_moments=night.restless_moments,
         sleep_latency_min=night.sleep_latency_min,
+    )
+
+
+def _log_extra_activity_keys(raw: dict) -> None:
+    """Log any activity keys we don't currently use. Runs once per process."""
+    global _extra_activity_keys_logged
+    if _extra_activity_keys_logged:
+        return
+    _extra_activity_keys_logged = True
+    extras = sorted(set(raw.keys()) - _USED_ACTIVITY_KEYS)
+    if extras:
+        logger.info("Unused activity keys (consider adding to model): %s", extras)
+
+
+def _parse_activity(raw: dict) -> GarminActivity | None:
+    """Parse one Garmin activity dict into a GarminActivity.
+
+    Returns None if the record is missing required fields (e.g. manual entries
+    with no timestamp).
+    """
+    activity_id = raw.get("activityId")
+    start_gmt = raw.get("startTimeGMT")
+    if not activity_id or not start_gmt:
+        return None
+
+    _log_extra_activity_keys(raw)
+
+    # Garmin returns "YYYY-MM-DD HH:MM:SS" in GMT — attach UTC explicitly.
+    start_utc = datetime.strptime(start_gmt, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    duration_s = int(raw.get("duration") or 0)
+    end_utc = start_utc + timedelta(seconds=duration_s)
+
+    activity_type_dict = raw.get("activityType") or {}
+    activity_type = activity_type_dict.get("typeKey") or "unknown"
+
+    avg_hr = raw.get("averageHR")
+    max_hr = raw.get("maxHR")
+    calories = raw.get("calories")
+
+    return GarminActivity(
+        activity_id=int(activity_id),
+        date=start_utc.date(),
+        name=raw.get("activityName"),
+        activity_type=activity_type,
+        start_time_utc=start_utc,
+        end_time_utc=end_utc,
+        duration_min=duration_s // 60,
+        avg_hr=int(avg_hr) if avg_hr is not None else None,
+        max_hr=int(max_hr) if max_hr is not None else None,
+        calories=int(calories) if calories is not None else None,
+        aerobic_te=raw.get("aerobicTrainingEffect"),
+        anaerobic_te=raw.get("anaerobicTrainingEffect"),
+    )
+
+
+def fetch_activities(
+    days: int = 7,
+    prompt_mfa: Callable[[], str] | None = None,
+) -> list[GarminActivity]:
+    """Pull the last `days` worth of activities from Garmin Connect.
+
+    Uses the same auth pattern as fetch_sleep_nights — shares credentials
+    from .env, caches session via GARMINTOKENS if set.
+
+    Activities with missing required fields are silently skipped and logged.
+    """
+    email = os.environ["GARMIN_EMAIL"]
+    password = os.environ["GARMIN_PASSWORD"]
+
+    if prompt_mfa is None:
+        prompt_mfa = lambda: input("Garmin 2FA code: ")  # noqa: E731
+
+    garmin = Garmin(email=email, password=password, prompt_mfa=prompt_mfa)
+    garmin.login()
+
+    today = date.today()
+    start_date = today - timedelta(days=days)
+
+    logger.info("Fetching activities from %s to %s", start_date.isoformat(), today.isoformat())
+
+    try:
+        raw_list = garmin.get_activities_by_date(start_date.isoformat(), today.isoformat())
+    except Exception:
+        logger.warning("Failed to fetch activities", exc_info=True)
+        return []
+
+    activities: list[GarminActivity] = []
+    for raw in raw_list:
+        activity = _parse_activity(raw)
+        if activity is None:
+            logger.info("Skipping activity with missing required fields: %s", raw.get("activityId"))
+            continue
+        activities.append(activity)
+
+    return activities
+
+
+def garmin_to_workout(activity: GarminActivity) -> Workout:
+    """Map a Garmin-specific activity to the canonical Workout model.
+
+    The seam between device-specific ingest and the device-agnostic store.
+    """
+    return Workout(
+        activity_id=activity.activity_id,
+        source="garmin",
+        date=activity.date,
+        name=activity.name,
+        activity_type=activity.activity_type,
+        start_time_utc=activity.start_time_utc,
+        end_time_utc=activity.end_time_utc,
+        duration_min=activity.duration_min,
+        avg_hr=activity.avg_hr,
+        max_hr=activity.max_hr,
+        calories=activity.calories,
+        aerobic_te=activity.aerobic_te,
+        anaerobic_te=activity.anaerobic_te,
     )

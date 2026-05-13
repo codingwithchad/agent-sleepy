@@ -1,0 +1,24 @@
+{
+  "activityId": 17000000001,
+  "activityName": "Evening Run",
+  "activityType": {
+    "typeId": 1,
+    "typeKey": "running",
+    "parentTypeId": 17,
+    "isHidden": false,
+    "trimmable": true,
+    "restricted": false
+  },
+  "startTimeGMT": "2026-05-11 03:15:00",
+  "duration": 2700.0,
+  "distance": 6500.0,
+  "averageHR": 148,
+  "maxHR": 172,
+  "calories": 380,
+  "aerobicTrainingEffect": 3.5,
+  "anaerobicTrainingEffect": 1.2,
+  "steps": 5200,
+  "avgStrideLength": 1.25,
+  "avgVerticalOscillation": 9.2,
+  "avgGroundContactTime": 245
+}

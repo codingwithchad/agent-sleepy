@@ -28,13 +28,13 @@ Structured like ROADMAP.md: do these in order, check them off as you go.
 
 ## Phase 1 — Garmin account setup
 
-- [ ] **Create a Garmin Connect account** if you don't have one: [connect.garmin.com](https://connect.garmin.com). Use the same email you'll put in `.env`.
+- [X] **Create a Garmin Connect account** if you don't have one: [connect.garmin.com](https://connect.garmin.com). Use the same email you'll put in `.env`.
 
-- [ ] **Pair your Garmin device** with the Garmin Connect app on your phone. Sleep tracking must be enabled on the device (it usually is by default). Wear it for at least one full night before the next step so there's data to pull.
+- [X] **Pair your Garmin device** with the Garmin Connect app on your phone. Sleep tracking must be enabled on the device (it usually is by default). Wear it for at least one full night before the next step so there's data to pull.
 
-- [ ] **Check whether your account has 2FA enabled.** In Garmin Connect (web or app): Account → Security. If 2FA is on, tell Claude before running anything — a `prompt_mfa` handler needs to be added to the ingest code first.
+- [X] **Check whether your account has 2FA enabled.** In Garmin Connect (web or app): Account → Security. If 2FA is on, tell Claude before running anything — a `prompt_mfa` handler needs to be added to the ingest code first.
 
-- [ ] **Run the inspection command** once you have credentials and at least one night of data:
+- [X] **Run the inspection command** once you have credentials and at least one night of data:
   ```bash
   PYTHONPATH=src uv run python -c "
   import logging, json
