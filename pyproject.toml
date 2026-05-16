@@ -9,6 +9,7 @@ dependencies = [
     "garminconnect>=0.3.2",
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
+    "python-telegram-bot>=21.0",
 ]
 
 [build-system]
